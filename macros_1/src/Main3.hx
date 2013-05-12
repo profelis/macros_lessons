@@ -55,7 +55,7 @@ class Main3 {
 		return macro Date.fromString($v{Date.now().toString()});
 	}
 	
-	// еще один простой пример
+	// еще один про�?той пример
 	macro static public function getBuildDate6():Expr {
 		return macro Date.fromTime($v{Date.now().getTime()});
 	}

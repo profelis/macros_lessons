@@ -9,7 +9,7 @@ class Main {
 	#if !macro
 	static function main() {
 		trace(test(Date.fromString("2013-01-01")));
-		var date = getBuildDate4();
+		var date = getBuildDate6();
 		trace(date);
 		trace(Type.typeof(date));
 		
@@ -50,8 +50,17 @@ class Main {
 		return macro Date.fromString($e);
 	}
 	
+	// в Haxe 2 $() аналогично Context.makeExpr
+	@:macro static public function getBuildDate5():Expr {
+		return macro Date.fromString($(Date.now().toString()));
+	}
+	
+	// еще один простой пример
+	@:macro static public function getBuildDate6():Expr {
+		return macro Date.fromTime($(Date.now().getTime()));
+	}
+	
 	@:macro static public function getFileContent(path:String) {
-		var f = File.getContent(path);
-		return Context.makeExpr(f, Context.currentPos());
+		return macro $(File.getContent(path));
 	}
 }
