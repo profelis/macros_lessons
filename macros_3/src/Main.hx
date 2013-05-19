@@ -12,7 +12,12 @@ class Main
 	
 	static function main() 
 	{
-		trace(Assets.arial);
+		trace(Assets.flash);
+		
+		var f = new PT_Sans();
+		trace([f.fontName, f.fontStyle]);
+		
+		trace(Assets.text);
 	}
 	
 }

@@ -21,7 +21,7 @@
   <!-- Build options -->
   <build>
     <option directives="" />
-    <option flashStrict="False" />
+    <option flashStrict="True" />
     <option mainClass="Main" />
     <option enabledebug="True" />
     <option additional="#--times&#xA;#-D macro_times" />

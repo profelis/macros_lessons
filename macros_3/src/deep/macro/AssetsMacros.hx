@@ -1,6 +1,7 @@
 package deep.macro;
 
 import haxe.io.Path;
+import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import sys.FileSystem;
@@ -12,6 +13,8 @@ enum AssetType {
 	AImage;
 	ASound;
 	AFont;
+	ASWF;
+	AText;
 }
 
 #end
@@ -22,6 +25,8 @@ class AssetsMacros {
 	static var IMAGES = ["jpg", "jpeg", "gif", "png"];
 	static var SOUNDS = ["mp3", "wav"];
 	static var FONTS = ["ttf"];
+	static var SWF = ["swf", "swc"];
+	static var TEXT = ["txt"];
 	
 	// Название мета тега
 	inline static function getMetaName(type:AssetType) {
@@ -29,6 +34,7 @@ class AssetsMacros {
 			case AImage: ":bitmap";
 			case ASound: ":sound";
 			case AFont: ":font";
+			case _ : null;
 		}
 	}
 	
@@ -38,6 +44,8 @@ class AssetsMacros {
 			case AImage: macro : flash.display.BitmapData;
 			case ASound: macro : flash.media.Sound;
 			case AFont: macro : flash.text.Font;
+			case AText: macro : String;
+			case _: null;
 		}
 	}
 	
@@ -56,6 +64,7 @@ class AssetsMacros {
 			case AImage: "Bitmap_";
 			case ASound: "Sound_";
 			case AFont: "Font_";
+			case _: null;
 		}
 	}
 	
@@ -64,6 +73,7 @@ class AssetsMacros {
 			case AImage: "bmp";
 			case ASound: "snd";
 			case AFont: "fnt";
+			case _: null;
 		}
 	}
 	
@@ -71,6 +81,7 @@ class AssetsMacros {
 		return switch (type) {
 			case AImage: [macro 0, macro 0];
 			case ASound, AFont: [];
+			case _: null;
 		}
 	}
 	
@@ -105,18 +116,40 @@ class AssetsMacros {
 			
 			var p = new Path(file);
 			var ext = p.ext.toLowerCase();
-			var type = if (Lambda.has(IMAGES, ext)) AImage;
-				else if (Lambda.has(SOUNDS, ext)) ASound;
-				else if (Lambda.has(FONTS, ext)) AFont;
+			
+			var type = switch (ext) {
+				case ext if (Lambda.has(IMAGES, ext)): AImage;
+				case ext if (Lambda.has(SOUNDS, ext)): ASound;
+				case ext if (Lambda.has(SWF, ext)): ASWF;
+				case ext if (Lambda.has(FONTS, ext)): AFont;
+				case ext if (Lambda.has(TEXT, ext)): AText;
+			}
 			
 			if (type == null) continue; // фаил неизвестного типа
+			if (type == AFont) continue;
+			
+			if (type == ASWF) {
+				Compiler.addNativeLib(file);
+				continue;
+			}
 			
 			var ct = getComplexType(type);
-			
 			var data = display ? null : File.getContent(file);
+			
+			if (type == AText) {
+				res.push( {
+					name : varName(type, p.file),
+					access : [APublic, AStatic],
+					doc : 'file: "$file"',
+					kind : FVar(ct, macro $v{data} ),
+					pos : pos,
+				});
+				continue;
+			}
+			
 			var filePos = Context.makePosition( { min:0, max:0, file:file } );
 			var className = getClassPrefix(type) + p.file;
-			var metaParams = [ { expr :EConst(CString("data:" + data)), pos :filePos } ];
+			var metaParams = [ macro $v{"data:" + data} ];
 			if (type == AFont) metaParams.push( { expr :EConst(CString("32-128")), pos :filePos } );
 			
 			var clazz:TypeDefinition  = {
@@ -135,7 +168,7 @@ class AssetsMacros {
 			res.push( {
 				name : varName(type, p.file),
 				access : [APublic, AStatic],
-				//doc : null,
+				doc : 'file: "$file"',
 				kind : FVar(ct, { expr : ENew( { pack : ["assets"], name : className, params : [] }, getArgs(type)), pos : pos } ),
 				//meta : [],
 				pos : pos,
